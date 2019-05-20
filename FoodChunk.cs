@@ -71,7 +71,7 @@ namespace TheXDS.Sneik
             Game.Score += Game.Level;
             Place();
 
-            if (eaten == 20)
+            if (eaten == 19)
             {
                 eaten = 0;
                 Game.Level++;
