@@ -72,5 +72,22 @@ namespace TheXDS.Sneik
         {
             return X == other.X && Y == other.Y;
         }
+
+        /// <summary>
+        ///     Dibuja este elemento.
+        /// </summary>
+        public void Draw()
+        {
+            Console.SetCursorPosition(X, Y);
+            Console.BackgroundColor = Color;
+            Console.Write("[]");
+        }
+
+        public void Clear()
+        {
+            Console.SetCursorPosition(X, Y);
+            Console.BackgroundColor = Game.Bg;
+            Console.Write("  ");
+        }
     }
 }

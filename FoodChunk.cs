@@ -37,14 +37,18 @@ namespace TheXDS.Sneik
     {
         private static Random Rnd = new Random();
 
+        private byte eaten;
+
         /// <summary>
         /// Vuelve a reubicar este elemento de comida.
         /// </summary>
         public void Place()
         {
+            Clear();
             X = (short)(Rnd.Next(Console.BufferWidth / 2) * 2);
             Y = (short)Rnd.Next(Console.BufferHeight);
             if (Game.Snake.Any(p => p.Collides(this))) Place();
+            Draw();
         }
 
         /// <summary>
@@ -54,7 +58,6 @@ namespace TheXDS.Sneik
         public FoodChunk()
         {
             Color = ConsoleColor.DarkRed;
-            Place();
         }
 
 
@@ -65,9 +68,18 @@ namespace TheXDS.Sneik
         /// <param name="head">Head.</param>
         public override void CollideAction(Chunk head)
         {
-            Game.Score++;
+            Game.Score += Game.Level;
             Place();
-            Console.Title = $"Score: {Game.Score} - Sneik";
+
+            if (eaten == 20)
+            {
+                eaten = 0;
+                Game.Level++;
+                Game.Loop.Interval = 500 / Game.Level;
+            }
+            else eaten++;
+
+            Game.ReportScore();
         }
     }
 }

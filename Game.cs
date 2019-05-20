@@ -46,25 +46,35 @@ namespace TheXDS.Sneik
         /// <param name="args">The command-line arguments.</param>
         static void Main(string[] args)
         {
-
+            CleanUp();
             Loop.Elapsed+= Loop_Elapsed;
             Console.CursorVisible = false;
             var play = true;
             while (play)
             {
+                Score = 0;
+                Level = 1;
+                Vert = false;
+                Dir = true;
+                Console.SetCursorPosition(0, 0);
+                Console.Write(new string(' ', Console.BufferWidth * 2));
                 Snake.Clear();
                 for (byte j = 2; j <= 12; j+=2)
                     Snake.Enqueue(new BodyChunk { X = j, Y = 1});
+
+                ReportScore();
                 FoodChunk.Place();
+
+                Redraw();
                 Loop.Start();
 
-                while (Loop.Enabled) { }
+                while (Loop.Enabled) System.Threading.Thread.Sleep((int)Loop.Interval);
 
                 Console.BackgroundColor = Bg;
-                Console.SetCursorPosition(0, 0);
-                Console.Write("Perdiste. Quieres continuar? (s/N)");
+                Console.SetCursorPosition(0, 1);
+                Console.Write("Quieres volver a jugar? (s/N)");
                 play = Console.ReadLine().ToLower() == "s";
-
+                AltClear();
             }
             CleanUp();
         }
@@ -82,12 +92,17 @@ namespace TheXDS.Sneik
         /// <summary>
         /// Obtiene el controlador del ciclo del juego.
         /// </summary>
-        public static Timer Loop = new Timer(200);
+        public static Timer Loop = new Timer(500);
 
         /// <summary>
         /// Obtiene el puntaje actual del juego.
         /// </summary>
         public static int Score;
+
+        /// <summary>
+        /// Obtiene o establece el nivel de dificultad actual.
+        /// </summary>
+        public static byte Level = 1;
 
         /// <summary>
         /// Almacena el color de fondo predeterminado de la consola.
@@ -111,6 +126,9 @@ namespace TheXDS.Sneik
         public static void Lose()
         {
             Loop.Stop();
+            Console.SetCursorPosition(0, 0);
+            Console.BackgroundColor = Bg;
+            Console.Write($"Perdiste. Tu puntaje: {Score}");
         }
 
         /// <summary>
@@ -141,13 +159,12 @@ namespace TheXDS.Sneik
                 Lose();
             }
 
-            if (Chunks.FirstOrDefault(p=>p.Collides(newHead)) is Chunk c)
+            if (Chunks.FirstOrDefault(p => !(p == Chunks.First()) && p.Collides(newHead)) is Chunk c)
                 c.CollideAction(newHead);
-            else Snake.Dequeue();
+            else Snake.Dequeue().Clear();
 
+            newHead.Draw();
             Snake.Enqueue(newHead);
-
-            Redraw();
         }
 
         /// <summary>
@@ -161,31 +178,34 @@ namespace TheXDS.Sneik
 
             switch (k)
             {
-                case ConsoleKey.W:
+                //case ConsoleKey.W:
                 case ConsoleKey.UpArrow:
                     if (Vert) return;
                     Vert = true;
                     Dir = false;
                     break;
-                case ConsoleKey.A:
+                //case ConsoleKey.A:
                 case ConsoleKey.LeftArrow:
                     if (!Vert) return;
                     Vert = false;
                     Dir = false;
                     break;
-                case ConsoleKey.S:
+                //case ConsoleKey.S:
                 case ConsoleKey.DownArrow:
                     if (Vert) return;
                     Vert = true;
                     Dir = true;
                     break;
-                case ConsoleKey.D:
+                //case ConsoleKey.D:
                 case ConsoleKey.RightArrow:
                     if (!Vert) return;
                     Vert = false;
                     Dir = true;
                     break;
                 case ConsoleKey.Escape:
+                    Console.SetCursorPosition(0, 0);
+                    Console.BackgroundColor = Bg;
+                    Console.Write("Te has retirado.");
                     Loop.Stop();
                     break;
             }
@@ -196,18 +216,7 @@ namespace TheXDS.Sneik
         /// </summary>
         static void Redraw()
         {
-            if (!Loop.Enabled) return;
-
-            Console.BackgroundColor = Bg;
-            AltClear();
-
-
-            foreach(var j in Chunks)
-            {
-                Console.SetCursorPosition(j.X, j.Y);
-                Console.BackgroundColor = j.Color;
-                Console.Write("[]");
-            }
+            foreach(var j in Chunks) j.Draw();
         }
 
         /// <summary>
@@ -216,11 +225,19 @@ namespace TheXDS.Sneik
         /// </summary>
         static void AltClear()
         {
-            Console.SetCursorPosition(0, 0);
-            for (short j = 0; j < Console.WindowHeight; j++)
+            Console.BackgroundColor = Bg;
+            foreach (var j in Chunks)
             {
-                Console.Write(new string(' ', Console.BufferWidth));
+                j.Clear();
             }
+        }
+
+        /// <summary>
+        /// Reporta el nivel y el puntaje actuales.
+        /// </summary>
+        public static void ReportScore()
+        {
+            Console.Title = $"Sneik - nivel {Level}, {Score} puntos";
         }
     }
 }
