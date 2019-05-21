@@ -54,6 +54,7 @@ namespace TheXDS.Sneik
             {
                 Score = 0;
                 Level = 1;
+                Loop.Interval = 500;
                 Vert = false;
                 Dir = true;
                 Console.SetCursorPosition(0, 0);
@@ -126,6 +127,7 @@ namespace TheXDS.Sneik
         public static void Lose()
         {
             Loop.Stop();
+            FoodChunk.Reset();
             Console.SetCursorPosition(0, 0);
             Console.BackgroundColor = Bg;
             Console.Write($"Perdiste. Tu puntaje: {Score}");

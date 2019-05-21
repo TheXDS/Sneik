@@ -39,16 +39,21 @@ namespace TheXDS.Sneik
 
         private byte eaten;
 
+        public void Reset()
+        {
+            eaten = 0;
+        }
+
         /// <summary>
         /// Vuelve a reubicar este elemento de comida.
         /// </summary>
         public void Place()
         {
-            Clear();
+            //Clear();
             X = (short)(Rnd.Next(Console.BufferWidth / 2) * 2);
             Y = (short)Rnd.Next(Console.BufferHeight);
             if (Game.Snake.Any(p => p.Collides(this))) Place();
-            Draw();
+            //Draw();
         }
 
         /// <summary>
@@ -70,7 +75,7 @@ namespace TheXDS.Sneik
         {
             Game.Score += Game.Level;
             Place();
-
+            Draw();
             if (eaten == 19)
             {
                 eaten = 0;
