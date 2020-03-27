@@ -73,7 +73,7 @@ namespace TheXDS.Sneik
         /// <param name="head">Head.</param>
         public override void CollideAction(Chunk head)
         {
-            Game.Score += Game.Level * 100 + 1; // +1 compensa OnGameTick()
+            Game.Score += (Game.Level * 100) + 1; // +1 compensa OnGameTick()
             Place();
             Draw();
             if (eaten == 19)
