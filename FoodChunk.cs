@@ -1,4 +1,4 @@
-﻿//
+//
 // FoodChunk.cs
 //
 // Author:
@@ -33,9 +33,9 @@ namespace TheXDS.Sneik
     /// Implementa un elemento interactivo que controla la comida de la
     /// serpiente.
     /// </summary>
-    class FoodChunk : Chunk
+    internal sealed class FoodChunk : Chunk
     {
-        private static Random Rnd = new Random();
+        private static readonly Random Rnd = new Random();
 
         private byte eaten;
 
@@ -49,11 +49,12 @@ namespace TheXDS.Sneik
         /// </summary>
         public void Place()
         {
-            //Clear();
-            X = (short)(Rnd.Next(Console.BufferWidth / 2) * 2);
-            Y = (short)Rnd.Next(Console.BufferHeight);
-            if (Game.Snake.Any(p => p.Collides(this))) Place();
-            //Draw();
+            do
+            {
+                X = (short)(Rnd.Next((Game.Bounds.Left + 2) / 2, Game.Bounds.Right / 2) * 2);
+                Y = (short)Rnd.Next(Game.Bounds.Top + 1, Game.Bounds.Bottom);
+            }
+            while (Game.Snake.Any(p => p.Collides(this)));
         }
 
         /// <summary>
@@ -65,7 +66,6 @@ namespace TheXDS.Sneik
             Color = ConsoleColor.DarkRed;
         }
 
-
         /// <summary>
         /// Ejecuta una acción al producirse una colisión con la cabeza de la
         /// serpiente.
@@ -73,7 +73,7 @@ namespace TheXDS.Sneik
         /// <param name="head">Head.</param>
         public override void CollideAction(Chunk head)
         {
-            Game.Score += Game.Level;
+            Game.Score += Game.Level * 100 + 1; // +1 compensa OnGameTick()
             Place();
             Draw();
             if (eaten == 19)
@@ -83,7 +83,16 @@ namespace TheXDS.Sneik
                 Game.Loop.Interval = 500 / Game.Level;
             }
             else eaten++;
+            Game.ReportScore();
+        }
 
+        /// <summary>
+        /// Decrementa el puntaje del jugador por cada movimiento donde no se
+        /// ha comido una fruta.
+        /// </summary>
+        protected internal override void OnGameTick()
+        {
+            Game.Score--;
             Game.ReportScore();
         }
     }

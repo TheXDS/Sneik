@@ -1,75 +1,81 @@
-﻿//
-// Game.cs
-//
-// Author:
-//       César Andrés Morgan <xds_xps_ivx@hotmail.com>
-//
-// Copyright (c) 2019 César Andrés Morgan
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
+﻿/*
+Game.cs
+
+Author:
+      César Andrés Morgan <xds_xps_ivx@hotmail.com>
+
+Copyright (c) 2019-2020 César Andrés Morgan
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+*/
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Timers;
+using System.Drawing;
 
 namespace TheXDS.Sneik
 {
+    internal struct GameBounds
+    {
+        public short Left { get; set; }
+
+        public short Right { get; set; }
+
+        public short Top { get; set; }
+
+        public short Bottom { get; set; }
+    }
+
     /// <summary>
     /// Punto de entrada y control general del juego.
     /// </summary>
-    static class Game
+    internal static class Game
     {
-        static bool Vert;
-        static bool Dir = true;
-        static IEnumerable<Chunk> Chunks => Snake.Concat(new[] { FoodChunk });
+        private static bool Vert;
+        private static bool Dir = true;
+        private static readonly List<Chunk> Walls = new List<Chunk>();
+        public static GameBounds Bounds = new GameBounds();
+        private static IEnumerable<Chunk> Chunks => Snake.Concat(new[] { FoodChunk }).Concat(Walls);
 
         /// <summary>
         /// The entry point of the program, where the program control starts and ends.
         /// </summary>
-        /// <param name="args">The command-line arguments.</param>
-        static void Main(string[] args)
+        private static void Main()
         {
             CleanUp();
             Loop.Elapsed+= Loop_Elapsed;
             Console.CursorVisible = false;
             var play = true;
+
+            SetGameBounds<WarpChunk>();
+
             while (play)
             {
-                Score = 0;
-                Level = 1;
-                Loop.Interval = 500;
-                Vert = false;
-                Dir = true;
-                Console.SetCursorPosition(0, 0);
-                Console.Write(new string(' ', Console.BufferWidth * 2));
-                Snake.Clear();
-                for (byte j = 2; j <= 12; j+=2)
-                    Snake.Enqueue(new BodyChunk { X = j, Y = 1});
-
-                ReportScore();
-                FoodChunk.Place();
-
-                Redraw();
+                PrepareNewGame();
                 Loop.Start();
 
-                while (Loop.Enabled) System.Threading.Thread.Sleep((int)Loop.Interval);
+                // Timer principal
+                while (Loop.Enabled) Thread.Sleep((int)Loop.Interval);
 
                 Console.BackgroundColor = Bg;
                 Console.SetCursorPosition(0, 1);
@@ -78,6 +84,57 @@ namespace TheXDS.Sneik
                 AltClear();
             }
             CleanUp();
+        }
+
+        private static void ClearTopMessage()
+        {
+            Console.SetCursorPosition(0, 0);
+            Console.Write(new string(' ', Console.BufferWidth * 2));
+        }
+
+        private static void ResetSnake() => ResetSnake((short)(Bounds.Left + 2), (short)(Bounds.Top + 2));
+
+        private static void ResetSnake(in short startingX, in short startingY)
+        {
+            Snake.Clear();
+            for (short j = startingX; j <= 12; j += 2)
+            {
+                Snake.Enqueue(new BodyChunk { X = j, Y = startingY });
+            }
+        }
+
+        private static void SetGameBounds<TChunk>() where TChunk : Chunk, new()
+        {
+            Bounds.Left = 4;
+            Bounds.Right = 76;
+            Bounds.Top = 4;
+            Bounds.Bottom = 20;
+            Walls.ForEach(p => p.Clear());
+            Walls.Clear();
+            for (var j = Bounds.Left; j <= Bounds.Right; j+=2)
+            {
+                Walls.Add(new TChunk { X = j, Y = Bounds.Top });
+                Walls.Add(new TChunk { X = j, Y = Bounds.Bottom });
+            }
+            for (var j = (short)(Bounds.Top + 1); j < Bounds.Bottom; j++)
+            {
+                Walls.Add(new TChunk { X = Bounds.Left, Y = j });
+                Walls.Add(new TChunk { X = Bounds.Right, Y = j });
+            }
+        }
+
+        private static void PrepareNewGame()
+        {
+            ClearTopMessage();
+            Score = 0;
+            Level = 1;
+            Loop.Interval = 500;
+            Vert = false;
+            Dir = true;
+            ResetSnake();
+            ReportScore();
+            FoodChunk.Place();
+            Redraw();
         }
 
         /// <summary>
@@ -93,7 +150,7 @@ namespace TheXDS.Sneik
         /// <summary>
         /// Obtiene el controlador del ciclo del juego.
         /// </summary>
-        public static Timer Loop = new Timer(500);
+        public static System.Timers.Timer Loop = new System.Timers.Timer(500);
 
         /// <summary>
         /// Obtiene el puntaje actual del juego.
@@ -111,7 +168,7 @@ namespace TheXDS.Sneik
         public static ConsoleColor Bg = Console.BackgroundColor;
 
         /// <summary>
-        ///     Limpia y reestablece el estado de la terminal.
+        /// Limpia y reestablece el estado de la terminal.
         /// </summary>
         private static void CleanUp()
         {
@@ -122,7 +179,7 @@ namespace TheXDS.Sneik
         }
 
         /// <summary>
-        ///     Hace perder el juego.
+        /// Hace perder el juego.
         /// </summary>
         public static void Lose()
         {
@@ -130,7 +187,10 @@ namespace TheXDS.Sneik
             FoodChunk.Reset();
             Console.SetCursorPosition(0, 0);
             Console.BackgroundColor = Bg;
-            Console.Write($"Perdiste. Tu puntaje: {Score}");
+            Console.Write("Perdiste. ");
+            Thread.Sleep(3000);
+            Console.Write($"Tu puntaje: {Score}. ");
+            Thread.Sleep(3000);
         }
 
         /// <summary>
@@ -138,23 +198,11 @@ namespace TheXDS.Sneik
         /// </summary>
         /// <param name="sender">Objeto que ha generado el evento.</param>
         /// <param name="e">Argumentos del evento.</param>
-        static void Loop_Elapsed(object sender, ElapsedEventArgs e)
+        private static void Loop_Elapsed(object sender, ElapsedEventArgs e)
         {
-            var head = Snake.Last();
+            Parallel.Invoke(Chunks.Select<Chunk, Action>(p => p.OnGameTick).ToArray());
 
-            ReadInput();
-            var newHead = new BodyChunk();
-
-            if (Vert)
-            {
-                newHead.X = head.X;
-                newHead.Y = (short)(head.Y + (Dir ? 1 : -1));
-            }
-            else
-            {
-                newHead.X = (short)(head.X + (Dir ? 2 : -2));
-                newHead.Y = head.Y;
-            }
+            var newHead = SnakeStep();
 
             if (newHead.X < 0 || newHead.X > Console.WindowWidth || newHead.Y < 0 || newHead.Y >= Console.WindowHeight)
             {
@@ -169,10 +217,28 @@ namespace TheXDS.Sneik
             Snake.Enqueue(newHead);
         }
 
+        private static BodyChunk SnakeStep()
+        {
+            var head = Snake.Last();
+            ReadInput();
+            var newHead = new BodyChunk();
+            if (Vert)
+            {
+                newHead.X = head.X;
+                newHead.Y = (short)(head.Y + (Dir ? 1 : -1));
+            }
+            else
+            {
+                newHead.X = (short)(head.X + (Dir ? 2 : -2));
+                newHead.Y = head.Y;
+            }
+            return newHead;
+        }
+
         /// <summary>
         /// Lee los comandos de entrada del jugador.
         /// </summary>
-        static void ReadInput()
+        private static void ReadInput()
         {
             ConsoleKey? k = null;
             while (Console.KeyAvailable)
@@ -216,7 +282,7 @@ namespace TheXDS.Sneik
         /// <summary>
         /// Redibuja la pantalla de juego.
         /// </summary>
-        static void Redraw()
+        private static void Redraw()
         {
             foreach(var j in Chunks) j.Draw();
         }
@@ -225,7 +291,7 @@ namespace TheXDS.Sneik
         ///     Versión alternativa de <see cref="Console.Clear()"/> que no
         ///     limpia la pantalla haciendo Scroll en terminales de Linux.
         /// </summary>
-        static void AltClear()
+        private static void AltClear()
         {
             Console.BackgroundColor = Bg;
             foreach (var j in Chunks)

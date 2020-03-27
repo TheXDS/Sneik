@@ -1,28 +1,29 @@
-﻿//
-// Chunk.cs
-//
-// Author:
-//       César Andrés Morgan <xds_xps_ivx@hotmail.com>
-//
-// Copyright (c) 2019 César Andrés Morgan
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
+﻿/*
+Chunk.cs
+
+Author:
+      César Andrés Morgan <xds_xps_ivx@hotmail.com>
+
+Copyright (c) 2019-2020 César Andrés Morgan
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+*/
 
 using System;
 
@@ -33,12 +34,7 @@ namespace TheXDS.Sneik
     /// </summary>
     abstract class Chunk
     {
-        /// <summary>
-        /// Ejecuta una acción al producirse una colisión con la cabeza de la
-        /// serpiente.
-        /// </summary>
-        /// <param name="head">Head.</param>
-        public abstract void CollideAction(Chunk head);
+        private string pictograph = "[]";
 
         /// <summary>
         /// Posición X de este elemento.
@@ -59,6 +55,32 @@ namespace TheXDS.Sneik
         public ConsoleColor Color { get; set; }
 
         /// <summary>
+        /// Obtiene o establece el pictograma con el que se dibujará este 
+        /// <see cref="Chunk"/>.
+        /// </summary>
+        public string Pictograph
+        {
+            get => pictograph;
+            set
+            { 
+                if (value.Length != 2) throw new ArgumentOutOfRangeException();
+                pictograph = value;
+            }
+        }
+
+        /// <summary>
+        /// Ejecuta una acción al producirse una colisión con la cabeza de la
+        /// serpiente.
+        /// </summary>
+        /// <param name="head">Cabeza de la serpiente.</param>
+        public virtual void CollideAction(Chunk head)
+        {
+            head.Color = ConsoleColor.Red;
+            head.Draw();
+            Game.Lose();
+        }
+
+        /// <summary>
         /// Comprueba si este elemento colisiona con otro.
         /// </summary>
         /// <returns>
@@ -74,20 +96,28 @@ namespace TheXDS.Sneik
         }
 
         /// <summary>
-        ///     Dibuja este elemento.
+        /// Dibuja este elemento.
         /// </summary>
         public void Draw()
         {
             Console.SetCursorPosition(X, Y);
             Console.BackgroundColor = Color;
-            Console.Write("[]");
+            Console.Write(pictograph);
         }
 
+        /// <summary>
+        /// Borra este elemento de la pantalla.
+        /// </summary>
         public void Clear()
         {
             Console.SetCursorPosition(X, Y);
             Console.BackgroundColor = Game.Bg;
             Console.Write("  ");
         }
+
+        /// <summary>
+        /// Permite ejecutar operaciones periódicas por cada ciclo del juego.
+        /// </summary>
+        protected internal virtual void OnGameTick() { }
     }
 }
