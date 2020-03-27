@@ -1,4 +1,5 @@
 # Sneik
+![.NET Core](https://github.com/TheXDS/Sneik/workflows/.NET%20Core/badge.svg?event=push)
 [![CodeFactor](https://www.codefactor.io/repository/github/thexds/sneik/badge)](https://www.codefactor.io/repository/github/thexds/sneik)
 ## Introducción
 Sneik es una implementación simple del conocido juego de *Snake* escrito en C#. Se basa fuertemente en principios de programación SOLID, lo cual lo hace muy expansible.
