@@ -31,21 +31,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
-using System.Drawing;
 
 namespace TheXDS.Sneik
 {
-    internal struct GameBounds
-    {
-        public short Left { get; set; }
-
-        public short Right { get; set; }
-
-        public short Top { get; set; }
-
-        public short Bottom { get; set; }
-    }
-
     /// <summary>
     /// Punto de entrada y control general del juego.
     /// </summary>
@@ -54,8 +42,10 @@ namespace TheXDS.Sneik
         private static bool Vert;
         private static bool Dir = true;
         private static readonly List<Chunk> Walls = new List<Chunk>();
+        private static bool inPause;
         public static GameBounds Bounds = new GameBounds();
         private static IEnumerable<Chunk> Chunks => Snake.Concat(new[] { FoodChunk }).Concat(Walls);
+        private static readonly Dictionary<ConsoleKey, Action> KeyBindings = new Dictionary<ConsoleKey, Action>();
 
         /// <summary>
         /// The entry point of the program, where the program control starts and ends.
@@ -65,29 +55,63 @@ namespace TheXDS.Sneik
             CleanUp();
             Loop.Elapsed+= Loop_Elapsed;
             Console.CursorVisible = false;
-            var play = true;
-
             SetGameBounds<WarpChunk>();
+            SetKeyBindings();
 
-            while (play)
-            {
-                PrepareNewGame();
-                Loop.Start();
+            while (KeepPlaying()) ;
 
-                // Timer principal
-                while (Loop.Enabled) Thread.Sleep((int)Loop.Interval);
-
-                Console.BackgroundColor = Bg;
-                Console.SetCursorPosition(0, 1);
-                Console.Write("Quieres volver a jugar? (s/N)");
-                play = Console.ReadLine().ToLower() == "s";
-                AltClear();
-            }
+            AltClear();
             CleanUp();
+        }
+
+        private static bool KeepPlaying()
+        {
+            if (!inPause)
+            { 
+                PrepareNewGame(); 
+            } 
+            else
+            {
+                inPause = false;
+                ClearTopMessage();
+                Redraw();
+            }
+
+            Loop.Start();
+
+            // Timer principal
+            while (Loop.Enabled) Thread.Sleep((int)Loop.Interval);
+
+            if (!inPause)
+            {
+                Thread.Sleep(3000);
+                Console.Write("Quieres volver a jugar? (s/N)");
+                return Console.ReadLine().ToLower() == "s";
+            }
+            else 
+            {
+                Console.ReadKey(); 
+            }
+            return true;
+        }
+
+        private static void SetKeyBindings()
+        {
+            KeyBindings.Add(ConsoleKey.W, GoUp);
+            KeyBindings.Add(ConsoleKey.UpArrow, GoUp);
+            KeyBindings.Add(ConsoleKey.S, GoDown);
+            KeyBindings.Add(ConsoleKey.DownArrow, GoDown);
+            KeyBindings.Add(ConsoleKey.A, GoLeft);
+            KeyBindings.Add(ConsoleKey.LeftArrow, GoLeft);
+            KeyBindings.Add(ConsoleKey.D, GoRight);
+            KeyBindings.Add(ConsoleKey.RightArrow, GoRight);
+            KeyBindings.Add(ConsoleKey.Escape, Retire);
+            KeyBindings.Add(ConsoleKey.P, Pause);
         }
 
         private static void ClearTopMessage()
         {
+            Console.BackgroundColor = Bg;
             Console.SetCursorPosition(0, 0);
             Console.Write(new string(' ', Console.BufferWidth * 2));
         }
@@ -185,12 +209,8 @@ namespace TheXDS.Sneik
         {
             Loop.Stop();
             FoodChunk.Reset();
-            Console.SetCursorPosition(0, 0);
-            Console.BackgroundColor = Bg;
-            Console.Write("Perdiste. ");
-            Thread.Sleep(3000);
+            Message("Perdiste. ");
             Console.Write($"Tu puntaje: {Score}. ");
-            Thread.Sleep(3000);
         }
 
         /// <summary>
@@ -204,17 +224,20 @@ namespace TheXDS.Sneik
 
             var newHead = SnakeStep();
 
-            if (newHead.X < 0 || newHead.X > Console.WindowWidth || newHead.Y < 0 || newHead.Y >= Console.WindowHeight)
+            if (!Walls.Any())
             {
-                Lose();
+                if (newHead.X < 0 || newHead.X > Console.WindowWidth || newHead.Y < 0 || newHead.Y >= Console.WindowHeight)
+                {
+                    Lose();
+                }
             }
 
             if (Chunks.FirstOrDefault(p => !(p == Chunks.First()) && p.Collides(newHead)) is Chunk c)
                 c.CollideAction(newHead);
             else Snake.Dequeue().Clear();
 
-            newHead.Draw();
             Snake.Enqueue(newHead);
+            if (!inPause) newHead.Draw();
         }
 
         private static BodyChunk SnakeStep()
@@ -241,42 +264,48 @@ namespace TheXDS.Sneik
         private static void ReadInput()
         {
             ConsoleKey? k = null;
-            while (Console.KeyAvailable)
-            k = Console.ReadKey().Key;
+            while (Console.KeyAvailable) k = Console.ReadKey(true).Key;
+            if (k.HasValue && KeyBindings.TryGetValue(k.Value, out var action)) action.Invoke();            
+        }
 
-            switch (k)
-            {
-                //case ConsoleKey.W:
-                case ConsoleKey.UpArrow:
-                    if (Vert) return;
-                    Vert = true;
-                    Dir = false;
-                    break;
-                //case ConsoleKey.A:
-                case ConsoleKey.LeftArrow:
-                    if (!Vert) return;
-                    Vert = false;
-                    Dir = false;
-                    break;
-                //case ConsoleKey.S:
-                case ConsoleKey.DownArrow:
-                    if (Vert) return;
-                    Vert = true;
-                    Dir = true;
-                    break;
-                //case ConsoleKey.D:
-                case ConsoleKey.RightArrow:
-                    if (!Vert) return;
-                    Vert = false;
-                    Dir = true;
-                    break;
-                case ConsoleKey.Escape:
-                    Console.SetCursorPosition(0, 0);
-                    Console.BackgroundColor = Bg;
-                    Console.Write("Te has retirado.");
-                    Loop.Stop();
-                    break;
-            }
+        private static void GoUp()
+        {
+            if (Vert) return;
+            Vert = true;
+            Dir = false;
+        }
+        private static void GoDown()
+        {
+            if (Vert) return;
+            Vert = true;
+            Dir = true;
+        }
+        private static void GoLeft()
+        {
+            if (!Vert) return;
+            Vert = false;
+            Dir = false;
+        }
+
+        private static void GoRight()
+        {
+            if (!Vert) return;
+            Vert = false;
+            Dir = true;
+        }
+
+        private static void Retire()
+        {
+            Loop.Stop();
+            Message("Te has retirado. ");
+        }
+
+        private static void Pause()
+        {
+            inPause = true;
+            Loop.Stop();                
+            AltClear();
+            Message("Juego en pausa. Presione cualquier tecla para continuar...");
         }
 
         /// <summary>
@@ -298,6 +327,14 @@ namespace TheXDS.Sneik
             {
                 j.Clear();
             }
+        }
+
+        private static void Message(string message)
+        {
+            ClearTopMessage();
+            Console.SetCursorPosition(0, 0);
+            Console.BackgroundColor = Bg;
+            Console.Write(message);
         }
 
         /// <summary>
