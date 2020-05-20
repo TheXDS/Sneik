@@ -29,8 +29,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Timers;
+
+#if !NETFX20
+using System.Threading.Tasks;
+#endif
 
 namespace TheXDS.Sneik
 {
@@ -39,12 +42,26 @@ namespace TheXDS.Sneik
     /// </summary>
     internal static class Game
     {
+#if !NETFX20
+        private static IEnumerable<Chunk> Chunks => Snake.Concat(new[] { FoodChunk }).Concat(Walls);
+#else
+        private static IEnumerable<Chunk> Chunks
+        {
+            get
+            {
+                foreach (var j in Snake) yield return j;                
+                yield return FoodChunk;
+                foreach (var j in Walls) yield return j;                
+            }
+        }
+
+#endif
+
         private static bool Vert;
         private static bool Dir = true;
         private static readonly List<Chunk> Walls = new List<Chunk>();
         private static bool inPause;
         public static GameBounds Bounds = new GameBounds();
-        private static IEnumerable<Chunk> Chunks => Snake.Concat(new[] { FoodChunk }).Concat(Walls);
         private static readonly Dictionary<ConsoleKey, Action> KeyBindings = new Dictionary<ConsoleKey, Action>();
 
         /// <summary>
@@ -220,11 +237,18 @@ namespace TheXDS.Sneik
         /// <param name="e">Argumentos del evento.</param>
         private static void Loop_Elapsed(object sender, ElapsedEventArgs e)
         {
+#if !NETFX20
             Parallel.Invoke(Chunks.Select<Chunk, Action>(p => p.OnGameTick).ToArray());
+#else
+            foreach (var j in Chunks)
+            {
+                j.OnGameTick();
+            }
+#endif
 
             var newHead = SnakeStep();
 
-            if (!Walls.Any())
+            if (!Enumerable.Any(Walls))
             {
                 if (newHead.X < 0 || newHead.X > Console.WindowWidth || newHead.Y < 0 || newHead.Y >= Console.WindowHeight)
                 {
@@ -232,7 +256,7 @@ namespace TheXDS.Sneik
                 }
             }
 
-            if (Chunks.FirstOrDefault(p => !(p == Chunks.First()) && p.Collides(newHead)) is Chunk c)
+            if (Enumerable.FirstOrDefault(Chunks,p => !(p == Enumerable.First(Chunks)) && p.Collides(newHead)) is Chunk c)
                 c.CollideAction(newHead);
             else Snake.Dequeue().Clear();
 
@@ -242,7 +266,7 @@ namespace TheXDS.Sneik
 
         private static BodyChunk SnakeStep()
         {
-            var head = Snake.Last();
+            var head = Enumerable.Last(Snake);
             ReadInput();
             var newHead = new BodyChunk();
             if (Vert)

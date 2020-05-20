@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.1;net40;net20</TargetFrameworks>
     <NeutralLanguage>es-HN</NeutralLanguage>
     <Owners>César Andrés Morgan</Owners>
     <PackageProjectUrl>https://github.com/TheXDS/Sneik.git</PackageProjectUrl>
@@ -10,14 +10,17 @@
     <Title>Sneik</Title>
     <RootNamespace>TheXDS.Sneik</RootNamespace>
     <LangVersion>Latest</LangVersion>
-    <Version>1.2.0</Version>
+    <Version>1.3.0</Version>
     <Description>$Summary.</Description>
     <Copyright>Copyright (c) 2019-$([System.DateTime]::Today.Year) César Andrés Morgan</Copyright>
     <RepositoryUrl>https://github.com/TheXDS/Sneik.git</RepositoryUrl>
-    <PackageReleaseNotes>Mejoras del motor de juego
-Nuevos tipos de Chunk</PackageReleaseNotes>
+    <PackageReleaseNotes>Objetivos estandarizados de compilación</PackageReleaseNotes>
     <PackageLicenseExpression>mit</PackageLicenseExpression>
     <RepositoryType>git</RepositoryType>
+  </PropertyGroup>  
+  <PropertyGroup>
+    <DefineConstants Condition=" '$(TargetFramework)' == 'net40' ">NETFX40</DefineConstants>
+    <DefineConstants Condition=" '$(TargetFramework)' == 'net20' ">NETFX20</DefineConstants>
   </PropertyGroup>
   <ProjectExtensions>
     <MonoDevelop>
