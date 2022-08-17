@@ -40,7 +40,6 @@ namespace System.Linq
     /// </summary>
     internal static class Enumerable
     {
-
         public static bool Any<TSource>(IEnumerable<TSource> source)
         {
             return source.GetEnumerator().MoveNext();          

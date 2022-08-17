@@ -72,12 +72,12 @@ namespace TheXDS.Sneik
             CleanUp();
             Loop.Elapsed+= Loop_Elapsed;
             Console.CursorVisible = false;
-            SetGameBounds<WarpChunk>();
+            SetGameBounds<ObstacleChunk>();
             SetKeyBindings();
-
-            while (KeepPlaying()) ;
-
-            AltClear();
+            while (KeepPlaying())
+            {
+                AltClear();
+            }
             CleanUp();
         }
 
@@ -102,7 +102,7 @@ namespace TheXDS.Sneik
             if (!inPause)
             {
                 Thread.Sleep(3000);
-                Console.Write("Quieres volver a jugar? (s/N)");
+                Message("Quieres volver a jugar? (s/N)");
                 return Console.ReadLine().ToLower() == "s";
             }
             else 
@@ -123,6 +123,7 @@ namespace TheXDS.Sneik
             KeyBindings.Add(ConsoleKey.D, GoRight);
             KeyBindings.Add(ConsoleKey.RightArrow, GoRight);
             KeyBindings.Add(ConsoleKey.Escape, Retire);
+            KeyBindings.Add(ConsoleKey.Q, Retire);
             KeyBindings.Add(ConsoleKey.P, Pause);
         }
 
@@ -149,7 +150,7 @@ namespace TheXDS.Sneik
             Bounds.Left = 4;
             Bounds.Right = 76;
             Bounds.Top = 4;
-            Bounds.Bottom = 20;
+            Bounds.Bottom = 40;
             Walls.ForEach(p => p.Clear());
             Walls.Clear();
             for (var j = Bounds.Left; j <= Bounds.Right; j+=2)
@@ -329,7 +330,7 @@ namespace TheXDS.Sneik
             inPause = true;
             Loop.Stop();                
             AltClear();
-            Message("Juego en pausa. Presione cualquier tecla para continuar...");
+            Message("Juego en pausa. Presiona cualquier tecla para continuar...");
         }
 
         /// <summary>
@@ -341,8 +342,8 @@ namespace TheXDS.Sneik
         }
 
         /// <summary>
-        ///     Versión alternativa de <see cref="Console.Clear()"/> que no
-        ///     limpia la pantalla haciendo Scroll en terminales de Linux.
+        /// Versión alternativa de <see cref="Console.Clear()"/> que no
+        /// limpia la pantalla haciendo Scroll en terminales de Linux.
         /// </summary>
         private static void AltClear()
         {
